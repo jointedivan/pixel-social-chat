@@ -66,3 +66,36 @@
 3. Собрать прототип одной комнаты.
 4. Добавить локальный чат и синхронизацию состояния в рамках сессии.
 5. Провести первые тесты с пользователями.
+
+## Текущая структура проекта
+
+```text
+pixel-social-chat/
+  frontend/            # React + TypeScript (Vite)
+  backend/             # Python backend (FastAPI)
+    app/
+      api/
+      core/
+      models/
+      schemas/
+      services/
+    tests/
+```
+
+## Быстрый старт разработки
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
