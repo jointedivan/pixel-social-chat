@@ -1,3 +1,3 @@
-from app.schemas.user import UserRead, UserRegister
+from app.schemas.user import Token, UserLogin, UserRead, UserRegister
 
-__all__ = ["UserRead", "UserRegister"]
+__all__ = ["Token", "UserLogin", "UserRead", "UserRegister"]
