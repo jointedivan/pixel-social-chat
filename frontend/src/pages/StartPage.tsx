@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react'
 import { LoginModal } from '../components/LoginModal'
 import { RegisterModal } from '../components/RegisterModal'
-import { clearAccessToken, getAccessToken } from '../authStorage'
+import { clearAccessToken, isAuthenticated } from '../authStorage'
 
 type StartPageProps = {
-  onStart: () => void
+  onAuthSuccess: () => void
 }
 
-export function StartPage({ onStart }: StartPageProps) {
+export function StartPage({ onAuthSuccess }: StartPageProps) {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
   const [isLoginOpen, setIsLoginOpen] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getAccessToken()))
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isAuthenticated())
 
   useEffect(() => {
-    setIsLoggedIn(Boolean(getAccessToken()))
-  }, [isLoginOpen])
+    setIsLoggedIn(isAuthenticated())
+  }, [isLoginOpen, isRegisterOpen])
+
+  // Слушаем событие разлогина от API клиента (401 ошибка)
+  useEffect(() => {
+    const handleLogout = () => setIsLoggedIn(false)
+    window.addEventListener('auth:logout', handleLogout)
+    return () => window.removeEventListener('auth:logout', handleLogout)
+  }, [])
 
   return (
     <main className="start-screen">
@@ -38,11 +45,15 @@ export function StartPage({ onStart }: StartPageProps) {
         </div>
       ) : null}
 
-      <RegisterModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
+      <RegisterModal 
+        isOpen={isRegisterOpen} 
+        onClose={() => setIsRegisterOpen(false)} 
+        onSuccess={() => onAuthSuccess()} 
+      />
       <LoginModal
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        onLoginSuccess={() => setIsLoggedIn(true)}
+        onLoginSuccess={() => onAuthSuccess()}
       />
 
       <div className="auth-actions" role="group" aria-label="Действия авторизации">
@@ -61,10 +72,6 @@ export function StartPage({ onStart }: StartPageProps) {
           Войти
         </button>
       </div>
-
-      <button className="start-button" type="button" onClick={onStart}>
-        Открыть чат
-      </button>
     </main>
   )
 }

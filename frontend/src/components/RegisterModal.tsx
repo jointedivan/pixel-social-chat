@@ -1,14 +1,18 @@
 import { useEffect, useId, useState } from 'react'
 import { registerUser } from '../api/register'
+import { saveAccessToken } from '../authStorage'
 
 type RegisterModalProps = {
   isOpen: boolean
   onClose: () => void
+  onSuccess?: () => void
 }
 
-export function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
+export function RegisterModal({ isOpen, onClose, onSuccess }: RegisterModalProps) {
   const titleId = useId()
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
+  const [avatarId, setAvatarId] = useState(1)
   const [password, setPassword] = useState('')
   const [passwordAgain, setPasswordAgain] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +35,8 @@ export function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   useEffect(() => {
     if (!isOpen) {
       setEmail('')
+      setUsername('')
+      setAvatarId(1)
       setPassword('')
       setPasswordAgain('')
       setError(null)
@@ -59,8 +65,10 @@ export function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
 
     setIsSubmitting(true)
     try {
-      const user = await registerUser(email.trim(), password)
-      setSuccess(`Аккаунт создан: ${user.email}`)
+      const { access_token } = await registerUser(email.trim(), username.trim(), avatarId, password)
+      saveAccessToken(access_token)
+      setSuccess('Аккаунт создан! Вход выполнен.')
+      onSuccess?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка регистрации')
     } finally {
@@ -106,6 +114,42 @@ export function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               onChange={(ev) => setEmail(ev.target.value)}
             />
           </label>
+
+          <label className="modal-label">
+            Никнейм
+            <input
+              className="modal-input"
+              type="text"
+              name="username"
+              required
+              minLength={3}
+              maxLength={50}
+              value={username}
+              onChange={(ev) => setUsername(ev.target.value)}
+            />
+          </label>
+
+          <div className="modal-label">
+            Выберите персонажа
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              {[1, 2, 3].map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setAvatarId(id)}
+                  style={{
+                    padding: '10px',
+                    border: avatarId === id ? '2px solid #ff7b00' : '1px solid #ccc',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    background: avatarId === id ? '#fff5eb' : '#fff'
+                  }}
+                >
+                  Персонаж {id}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <label className="modal-label">
             Пароль

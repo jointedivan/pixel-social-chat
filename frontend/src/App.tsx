@@ -1,28 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { StartPage } from './pages/StartPage'
 import { ChatPage } from './pages/ChatPage'
+import { isAuthenticated } from './authStorage'
 
 export default function App() {
-  const [isChatOpen, setIsChatOpen] = useState(false)
-
-  useEffect(() => {
-    if (!isChatOpen) {
-      return
-    }
-
-    const handleEscClose = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsChatOpen(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleEscClose)
-    return () => window.removeEventListener('keydown', handleEscClose)
-  }, [isChatOpen])
+  const [isChatOpen, setIsChatOpen] = useState(() => isAuthenticated())
 
   if (isChatOpen) {
-    return <ChatPage onBack={() => setIsChatOpen(false)} />
+    return (
+      <ChatPage 
+        onLogout={() => {
+          setIsChatOpen(false)
+          // Перезагружаем страницу чтобы сбросить состояние
+          window.location.reload()
+        }}
+      />
+    )
   }
 
-  return <StartPage onStart={() => setIsChatOpen(true)} />
+  return <StartPage onAuthSuccess={() => setIsChatOpen(true)} />
 }

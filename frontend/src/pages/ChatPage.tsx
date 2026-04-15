@@ -1,14 +1,65 @@
+import { useEffect, useState } from 'react'
+import { SettingsModal } from '../components/SettingsModal'
+import { clearAccessToken } from '../authStorage'
+import { getCurrentUser, getAvatarUrl, type UserProfile } from '../api/user'
+
 type ChatPageProps = {
-  onBack: () => void
+  onLogout?: () => void
 }
 
-export function ChatPage({ onBack }: ChatPageProps) {
+export function ChatPage({ onLogout }: ChatPageProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+
+  // Загружаем профиль при входе
+  useEffect(() => {
+    getCurrentUser()
+      .then(user => setProfile(user))
+      .catch(console.error)
+  }, [])
+
+  const handleLogout = () => {
+    clearAccessToken()
+    onLogout?.()
+  }
+
+  const handleSettingsClose = () => {
+    setIsSettingsOpen(false)
+    // Обновляем профиль после закрытия настроек (могли поменять аватар)
+    getCurrentUser()
+      .then(user => setProfile(user))
+      .catch(console.error)
+  }
+
   return (
     <main className="chat-screen">
       <section className="chat-layout" aria-label="Chat interface">
         <aside className="chat-sidebar" aria-label="Список чатов и сообществ">
+          <SettingsModal 
+            isOpen={isSettingsOpen} 
+            onClose={handleSettingsClose}
+            onLogout={handleLogout}
+          />
+          
           <header className="sidebar-top">
-            <button className="sidebar-avatar" type="button" aria-label="Открыть профиль" />
+            <button 
+              className="sidebar-avatar" 
+              type="button" 
+              aria-label="Открыть настройки"
+              onClick={() => setIsSettingsOpen(true)}
+              style={{ 
+                backgroundImage: profile?.avatar_url ? `url(${getAvatarUrl(profile)})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: profile?.avatar_url ? 'transparent' : '#344353'
+              }}
+            >
+              {!profile?.avatar_url && profile?.username && (
+                <span style={{ fontSize: '14px', fontWeight: 600 }}>
+                  {profile.username[0].toUpperCase()}
+                </span>
+              )}
+            </button>
             <input className="sidebar-search" type="text" placeholder="Поиск" aria-label="Поиск чатов" />
           </header>
 
@@ -79,9 +130,6 @@ export function ChatPage({ onBack }: ChatPageProps) {
               <p className="chat-name">Mia Pixel</p>
               <p className="chat-status">online</p>
             </div>
-            <button className="chat-close" type="button" onClick={onBack} aria-label="Вернуться назад">
-              ✕
-            </button>
           </header>
 
           <div className="chat-body">

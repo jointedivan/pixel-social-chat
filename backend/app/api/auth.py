@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+import traceback
 
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
@@ -23,22 +24,40 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def register(payload: UserRegister, db: Session = Depends(get_db)) -> User:
-    existing = db.scalar(select(User).where(User.email == payload.email))
-    if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Пользователь с таким email уже зарегистрирован",
-        )
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+def register(payload: UserRegister, db: Session = Depends(get_db)) -> Token:
+    try:
+        existing_email = db.scalar(select(User).where(User.email == payload.email))
+        if existing_email is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Пользователь с таким email уже зарегистрирован",
+            )
+        
+        existing_username = db.scalar(select(User).where(User.username == payload.username))
+        if existing_username is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Пользователь с таким никнеймом уже существует",
+            )
 
-    user = User(
-        email=payload.email,
-        username=payload.username,
-        avatar_id=payload.avatar_id,
-        hashed_password=hash_password(payload.password),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+        user = User(
+            email=payload.email,
+            username=payload.username,
+            avatar_id=payload.avatar_id,
+            hashed_password=hash_password(payload.password),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        access_token = create_access_token(str(user.id))
+        return Token(access_token=access_token, token_type="bearer")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[REGISTER ERROR] {type(e).__name__}: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при регистрации: {type(e).__name__}: {str(e)[:100]}"
+        )
