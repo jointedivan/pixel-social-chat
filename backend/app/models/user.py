@@ -7,6 +7,7 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user_settings import UserSettings
+    from app.models.chat import ChatParticipant, Message
 
 
 class User(Base):
@@ -21,3 +22,11 @@ class User(Base):
     
     # Связь с настройками (one-to-one)
     settings: Mapped["UserSettings"] = relationship(back_populates="user", uselist=False)
+    
+    # Связи с чатами
+    chat_participants: Mapped[list["ChatParticipant"]] = relationship(
+        "ChatParticipant", back_populates="user", cascade="all, delete-orphan"
+    )
+    messages: Mapped[list["Message"]] = relationship(
+        "Message", back_populates="sender", cascade="all, delete-orphan"
+    )

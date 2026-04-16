@@ -37,6 +37,16 @@ export async function getCurrentUser(): Promise<UserProfile> {
   return api.get<UserProfile>('/users/me')
 }
 
+/** Поиск пользователей по никнейму */
+export async function searchUsers(query: string): Promise<UserProfile[]> {
+  return api.get<UserProfile[]>(`/users/search?q=${encodeURIComponent(query)}`)
+}
+
+/** Получить профиль пользователя по ID */
+export async function getUserById(userId: number): Promise<UserProfile> {
+  return api.get<UserProfile>(`/users/${userId}`)
+}
+
 /** Обновить профиль (никнейм, аватар) */
 export async function updateProfile(data: UpdateProfileData): Promise<UserProfile> {
   return api.put<UserProfile>('/users/me', data)

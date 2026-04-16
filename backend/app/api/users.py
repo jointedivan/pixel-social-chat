@@ -1,8 +1,8 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -43,6 +43,39 @@ def get_current_user_profile(
     # Убедимся что настройки существуют
     get_or_create_user_settings(db, current_user.id)
     return current_user
+
+
+@router.get("/search", response_model=list[UserProfileRead])
+def search_users(
+    q: str = Query(..., min_length=1, max_length=50, description="Поиск по username"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> list[User]:
+    """Поиск пользователей по username (без учёта регистра)"""
+    # Исключаем текущего пользователя из результатов
+    stmt = (
+        select(User)
+        .where(
+            func.lower(User.username).like(func.lower(f"%{q}%")),
+            User.id != current_user.id
+        )
+        .limit(20)
+    )
+    result = db.execute(stmt)
+    return list(result.scalars().all())
+
+
+@router.get("/{user_id}", response_model=UserProfileRead)
+def get_user_profile(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> User:
+    """Получить публичный профиль пользователя по ID"""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return user
 
 
 @router.put("/me", response_model=UserProfileRead)

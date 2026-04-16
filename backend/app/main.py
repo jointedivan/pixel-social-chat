@@ -9,10 +9,12 @@ from pathlib import Path
 
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
+from app.api.chats import router as chats_router
 from app.core.database import Base, engine
 from app.core.logging import log_error, log_request
 from app.models import User  # noqa: F401 — регистрация модели в metadata
 from app.models.user_settings import UserSettings  # noqa: F401
+from app.models.chat import Chat, ChatParticipant, Message  # noqa: F401 — регистрация моделей чатов
 
 
 @asynccontextmanager
@@ -53,6 +55,7 @@ async def log_middleware(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(chats_router)
 
 # Монтируем static директорию для загруженных аватарок
 static_dir = Path(__file__).parent / "static"
